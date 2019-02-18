@@ -17,5 +17,5 @@ extension Logging {
     }
 }
 
-extension ViewController: Logging {}
+extension ProfileViewController: Logging {}
 extension AppDelegate: Logging {}
