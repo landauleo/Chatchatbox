@@ -12,17 +12,13 @@ enum ViewControllerState: String {
     case appearing, appeared, disappearing, disappeared, notLoaded, loaded, layouting, layouted
 }
 
-class ProfileViewController: UIViewController {
+class ProfileViewController: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate  {
     
+    var photoWasSelected: Bool = false
     
-    @IBOutlet weak var profileImage: UIImageView!
+    @IBOutlet weak var userImage: UIImageView!
     @IBOutlet weak var editButton: UIButton!
-    @IBOutlet weak var choosePhotoButton: UIButton!
-    
-    var imagePicker = UIImagePickerController()
-    
-    
-    
+    @IBOutlet weak var editPhotoView: UIView!
     
     
     private var currentState = ViewControllerState.notLoaded
@@ -33,28 +29,28 @@ class ProfileViewController: UIViewController {
     }
     
     
+    override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
+        super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
+        
+        //print(editButton.frame)
+        //frame id unavailable, as view hasn't been loaded yet
+    }
+    
+    required init?(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder)
+        
+        //print(editButton.frame)
+        //frame id unavailable, as view hasn't been loaded yet
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        print(self.editButton.frame, "- viewDidLoad()")
-        let defaultPtofileImage: UIImage = UIImage(named: "placeholder-user")!
-        let choosePhotoImage: UIImage = UIImage(named: "slr-camera-2-xxl")!
-        self.choosePhotoButton.contentMode = .scaleAspectFit
-        self.choosePhotoButton.imageEdgeInsets = UIEdgeInsets(top: 15, left: 15, bottom: 15, right: 15)
-        self.choosePhotoButton.setImage(choosePhotoImage , for: .normal)
-        self.profileImage.image = defaultPtofileImage
-        self.profileImage.layer.masksToBounds = true
-        self.profileImage.clipsToBounds = true
-        self.choosePhotoButton.layer.masksToBounds = true
-        self.profileImage.layer.cornerRadius = choosePhotoButton.bounds.size.width / 2.0
-        self.choosePhotoButton.layer.cornerRadius = choosePhotoButton.bounds.size.width / 2.0
-        self.editButton.layer.cornerRadius = 10
-        self.editButton.layer.borderWidth = 1
-        self.choosePhotoButton.clipsToBounds = true
-
+        initViews() // update all views' state
         
         
         loggingInfo(about: "Function: \(#function))")
         viewControllerChanged(to: .loaded)
+        print(editButton.frame)  // sized frame from Storyboard
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -69,6 +65,7 @@ class ProfileViewController: UIViewController {
         
         loggingInfo(about: "Function: \(#function))")
         viewControllerChanged(to: .appeared)
+        print(editButton.frame) // frame after Auto layout usage
     }
     
     override func viewWillLayoutSubviews() {
@@ -100,6 +97,71 @@ class ProfileViewController: UIViewController {
         
     }
 
-
+    func initViews() {
+        userImage.layer.cornerRadius = editPhotoView.frame.width*0.5
+        userImage.clipsToBounds = true
+        
+        editPhotoView.layer.cornerRadius = editPhotoView.frame.width*0.5
+        editPhotoView.clipsToBounds = true
+        
+        editButton.layer.cornerRadius = 15
+        editButton.layer.borderColor = UIColor.black.cgColor
+        editButton.layer.borderWidth = 2.0
+        editButton.clipsToBounds = true
+    }
+    
+    
+    @IBAction func cameraViewTapped(_ sender: Any) {
+        print("Choose photo")
+        
+        let imagePicker = UIImagePickerController()
+        imagePicker.delegate = self
+        let photoPickerAlertController = UIAlertController(title: "Select profile photo", message: nil, preferredStyle: .actionSheet)
+        let cancelAlert = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        photoPickerAlertController.addAction(cancelAlert)
+        
+        
+        if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
+            let photoGalleryAlert = UIAlertAction(title: "Select photo from gallery", style: .default) { [weak self] action in
+                guard let `self` = self else { return }
+                imagePicker.sourceType = .photoLibrary
+                self.present(imagePicker, animated: true, completion: nil)
+            }
+            photoPickerAlertController.addAction(photoGalleryAlert)
+        }
+        
+        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+            let cameraAlert = UIAlertAction(title: "Take photo", style: .default) { [weak self] action in
+                guard let `self` = self else { return }
+                imagePicker.sourceType = .camera
+                self.present(imagePicker, animated: true, completion: nil)
+            }
+            photoPickerAlertController.addAction(cameraAlert)
+        }
+        
+        if photoWasSelected {
+            let deleteAlert = UIAlertAction(title: "Delete photo", style: .destructive) { [weak self] action in
+                guard let `self` = self else { return }
+                self.userImage.image = UIImage(named: "placeholder-user")
+                self.photoWasSelected = false
+            }
+            photoPickerAlertController.addAction(deleteAlert)
+        }
+        
+        present(photoPickerAlertController, animated: true, completion: nil)
+    }
+    
+    // необходимо по протоколу
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+        guard let userPhoto = info[.originalImage] as? UIImage else { return }
+        userImage.image = userPhoto
+        photoWasSelected = true
+        dismiss(animated: true, completion: nil)
+    }
+    
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        dismiss(animated: true, completion: nil)
+    }
+    
 }
 
